@@ -1,0 +1,201 @@
+<html>
+    <!-- this version of pong removed the stylesheet for the canvas, and made the paddle's movements cleaner. It also centered the ball and paddle. Finally it required an up arrow to start the game. I also fixed a bug in the wall bouncing.-->
+    <head>
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <style>
+            canvas{
+                border:gray solid 2px;
+                border-radius:2;
+                background-color:#eee;
+                height:250px;
+                width:300;
+            }
+        </style>
+    </head>
+    <body onkeydown="keyDown(event.keyCode)" onkeyup="keyUp(event.keyCode)" > 
+        <canvas>
+            
+        </canvas>
+        
+        <div id ="score">
+            Score: 0
+        </div>
+        <script>
+            var win = false;
+            var started = false;
+            var key=0;
+            var score = 0;
+            var check = false;
+            var blockArr = [];
+            var lose = false;
+            var canvas = document.getElementsByTagName("CANVAS")[0];
+            ctx=canvas.getContext("2d");
+            ctx.fillStyle = "#FF0000";
+            ctx.fillRect(135,145,30,5);
+            ctx.fillStyle = "blue";
+            ctx.fillRect(146,140,9,5);
+            var showScore = function(){
+                document.getElementById("score").innerHTML=score;
+            }
+            showScore();
+            var paddle = {
+                position:135,
+                direction:0,
+                speed:3,
+                move:function(keyCode){
+                    this.position+=this.direction*this.speed;
+                    if(this.position < 0){
+                        this.position = 0;
+                    }
+                    if(this.position > 270){
+                        this.position = 270;
+                    }
+                    ctx.fillStyle = "#FF0000";
+                    ctx.fillRect(this.position,145,30,5);
+                    ctx.clearRect(0,145,this.position,5);
+                    ctx.clearRect((this.position+30),145,30,5);
+                }
+            }
+            var ball = {
+                
+                slope: [1,-1],
+                changeSlope: function(which){
+                    if(this.slope[which]<0){
+                        this.slope[which]=-1;
+                    }
+                    if(this.slope[which]>0){
+                        this.slope[which]=1;
+                    }
+                    this.slope[which]*=(Math.floor(Math.random()*3+0.99));
+                    this.slope[which]*=-1;
+                },
+                position: [146,140,9,5],
+                move: function(){
+                    ctx.clearRect(this.position[0],this.position[1],this.position[2],this.position[3]);
+                    this.position[0]+=this.slope[0];
+                    this.position[1]+=this.slope[1];
+                    ctx.fillStyle=("#0000FF");
+                    if(!lose){
+                        ctx.fillRect(this.position[0],this.position[1],9,5);
+                    }
+                    
+                    if(this.position[1]==140){
+                        if((this.position[0]>=paddle.position&&this.position[0]<=paddle.position+30)||(this.position[0]+9>=paddle.position&&this.position[0]+9<=paddle.position+9)){
+                            this.changeSlope(1);
+                        }
+                        else{
+                            ctx.clearRect(this.position[0],this.position[1],this.position[2],this.position[3]);
+                            if(!win){
+                                alert("You LOSE!!!");
+                            }
+                            lose=true;
+                        }
+                    }
+                    if(this.position[0]>=290){
+                        this.slope[0]*=-1;
+                    }
+                    if(this.position[1]<=0){
+                        this.slope[1]*=-1;
+                    }
+                    if(this.position[0]<=0){
+                        this.slope[0]*=-1;
+                    }
+                    if(this.position[1]>=145){
+                        this.slope[0]*=-1
+                    }
+                    for(var i = 0; i<blockArr.length; i++){
+                        if((blockArr[i]!=false)&&(blockArr[i]!=false)&&((this.position[0]>blockArr[i].position[0]&&this.position[0]<blockArr[i].position[0]+30)||(this.position[0]+9>blockArr[i].position[0]&&this.position[0]+9<blockArr[i].position[0]+30))){
+                            
+                            if((this.position[1]>blockArr[i].position[1]&&this.position[1]<blockArr[i].position[1]+11)||(this.position[1]+5>blockArr[i].position[1]&&this.position[1]+5<blockArr[i].position[1]+11)){
+
+                                this.slope[1]*=-1;
+                        
+                                blockArr[i].hit();
+                                if(blockArr[i].points-blockArr[i].damage<=0){
+                                    blockArr[i]=false;
+                                }
+                            }  
+                        }
+                        if((blockArr[i]!=false)&&((this.position[1]>blockArr[i].position[1]&&this.position[1]<blockArr[i].position[1]+11)||(this.position[1]+5>blockArr[i].position[1]&&this.position[1]+5<blockArr[i].position[1]+11))){
+                            if(((this.position[0]>blockArr[i].position[0]&&this.position[0]<blockArr[i].position[0]+30)||(this.position[0]+9>blockArr[i].position[0]&&this.position[0]+9<blockArr[i].position[0]+30))){
+                                this.slope[0]*=-1;
+                            }
+                        }
+                    }
+                }
+            }
+            function block(points,x, y){
+                this.points = points;
+                this.damage = 0;
+                this.position = [x*34,1+(11*y),30,10];
+                this.hit = function(){
+                    //prompt("watermelon");
+                    this.damage++;
+                    
+                    //prompt("hit");
+                    this.changeColor();
+                    if(this.points-this.damage<=0){
+                        ctx.clearRect(this.position[0],this.position[1],this.position[2],this.position[3]);
+                        score+=this.points;
+                        showScore();
+                        if(score===54){
+                            alert("YOU WON!!!!!!");
+                            win = true;
+                        }
+                    }
+                    return this.damage>=this.points;
+                };
+                this.changeColor = function(){
+                    switch((this.points-this.damage)){
+                        
+                        case 1:
+                            ctx.fillStyle = "yellow";
+                            break;
+                        case 2:
+                            ctx.fillStyle = "green";
+                            break;
+                        case 3:
+                            ctx.fillStyle = "blue";
+                            break;
+                        case 0:
+                        case -1:
+                            ctx.clearRect(this.position[0],this.position[1],this.position[2],this.position[3]);
+                            break;
+                    }
+                    
+                   
+                    ctx.fillRect(this.position[0],this.position[1],this.position[2],this.position[3]);
+                }; 
+            }
+            //setInterval("ball.move()",25);
+            //setInterval("paddle.move()",25);
+            for(var j = 0; j<3; j++){
+                for(var i = 0; i<9;i++){
+                    blockArr.push(new block(3-j,i,j));
+                }
+            }
+
+            for(var i = 0; i<blockArr.length; i++){
+                blockArr[i].changeColor();
+            }
+            
+            var keyDown = function(keyCode){
+                if(event.keyCode == 39){
+                    paddle.direction = 1;
+                };
+                if(event.keyCode == 37){
+                    paddle.direction = -1;
+                };
+                if(event.keyCode == 38&&(!started)){
+                    setInterval("ball.move()",25);
+                    setInterval("paddle.move()",25);
+                    started = true;
+                }
+                key = event.keyCode;
+            }
+            var keyUp = function(){
+                paddle.direction = key = 0;
+            }
+        </script>
+    </body>
+</html>
